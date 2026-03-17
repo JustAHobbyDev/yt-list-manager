@@ -291,27 +291,27 @@
 
       <div class="mt-2 border-t border-border pt-2">
 
-	<div class="relative">
-	    <div class="px-3 pb-2">
-	      <input
-		bind:value={filter}
-		placeholder="Filter playlists..."
-		class="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-text placeholder:text-text-muted pr-9"
-	      />
-		{#if filter}
-		  <button
-		    type="button"
-		    onclick={() => (filter = "")}
-		    class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-muted hover:text-text transition-colors"
-		    aria-label="Clear filter"
-		  >
-		    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-		      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-		    </svg>
-		  </button>
-		{/if}
-	    </div>
-	</div>
+        <div class="px-3 pb-2">
+          <div class="relative">
+            <input
+              bind:value={filter}
+              placeholder="Filter playlists..."
+              class="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-text placeholder:text-text-muted pr-7"
+            />
+            {#if filter}
+              <button
+                type="button"
+                onclick={() => (filter = "")}
+                class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-muted hover:text-text transition-colors"
+                aria-label="Clear filter"
+              >
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            {/if}
+          </div>
+        </div>
 
         <!-- Folders -->
         {#each $folders as folder (folder.id)}
