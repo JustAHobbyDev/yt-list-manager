@@ -290,13 +290,26 @@
       </button>
 
       <div class="mt-2 border-t border-border pt-2">
-        <div class="px-3 pb-2">
-          <input
-            bind:value={filter}
-            placeholder="Filter playlists..."
-            class="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-text placeholder:text-text-muted"
-          />
-        </div>
+
+	<div class="relative">
+	    <div class="px-3 pb-2">
+	      <input
+		bind:value={filter}
+		placeholder="Filter playlists..."
+		class="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-text placeholder:text-text-muted pr-9"
+	      />
+		{#if filter}
+		    <button
+			type="button"
+			onclick={() => (filter = "")}
+			class="absolute right-3 inset-y-0 flex items-center text-text-muted text-xl leading-none hover:text-text text-2xl cursor-pointer transition-colors"
+	    aria-label="Clear filter"
+		      >
+		      ×
+      </button>
+		{/if}
+	    </div>
+	</div>
 
         <!-- Folders -->
         {#each $folders as folder (folder.id)}
