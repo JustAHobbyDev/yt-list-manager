@@ -299,14 +299,16 @@
 		class="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-text placeholder:text-text-muted pr-9"
 	      />
 		{#if filter}
-		    <button
-			type="button"
-			onclick={() => (filter = "")}
-			class="absolute right-3 inset-y-0 flex items-center text-text-muted text-xl leading-none hover:text-text text-2xl cursor-pointer transition-colors"
-	    aria-label="Clear filter"
-		      >
-		      ×
-      </button>
+		  <button
+		    type="button"
+		    onclick={() => (filter = "")}
+		    class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center text-text-muted hover:text-text transition-colors"
+		    aria-label="Clear filter"
+		  >
+		    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+		    </svg>
+		  </button>
 		{/if}
 	    </div>
 	</div>
