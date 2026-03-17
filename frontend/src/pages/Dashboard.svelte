@@ -1,10 +1,11 @@
 <script lang="ts">
   import { playlists, authStatus, addToast, showConfirm } from "../lib/stores";
-  import { removeAllUnavailable, getPlaylists } from "../lib/api";
+  import { removeAllUnavailable, removeEmptyPlaylists, getPlaylists } from "../lib/api";
   import PlaylistCard from "../components/PlaylistCard.svelte";
 
   const totalVideos = $derived($playlists.reduce((s, p) => s + p.item_count, 0));
   const totalUnavailable = $derived($playlists.reduce((s, p) => s + p.unavailable_count, 0));
+  const emptyCount = $derived($playlists.filter((p) => p.item_count === 0).length);
 
   async function handleRemoveAllUnavailable() {
     const ok = await showConfirm({
@@ -16,6 +17,22 @@
     try {
       const result = await removeAllUnavailable();
       addToast(`Removed ${result.removed} unavailable video(s)`, "success");
+      getPlaylists().then((p) => playlists.set(p));
+    } catch (e: any) {
+      addToast(e.message, "error");
+    }
+  }
+
+  async function handleRemoveEmptyPlaylists() {
+    const ok = await showConfirm({
+      message: `Delete ${emptyCount} empty playlist(s)? This cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      const result = await removeEmptyPlaylists();
+      addToast(`Deleted ${result.removed} empty playlist(s)`, "success");
       getPlaylists().then((p) => playlists.set(p));
     } catch (e: any) {
       addToast(e.message, "error");
@@ -34,14 +51,24 @@
         {/if}
       </p>
     </div>
-    {#if totalUnavailable > 0}
-      <button
-        onclick={handleRemoveAllUnavailable}
-        class="rounded bg-red px-4 py-2 text-sm font-medium text-white hover:opacity-80"
-      >
-        Remove All {totalUnavailable} Unavailable
-      </button>
-    {/if}
+    <div class="flex gap-2">
+      {#if totalUnavailable > 0}
+        <button
+          onclick={handleRemoveAllUnavailable}
+          class="rounded bg-red px-4 py-2 text-sm font-medium text-white hover:opacity-80"
+        >
+          Remove All {totalUnavailable} Unavailable
+        </button>
+      {/if}
+      {#if emptyCount > 0}
+        <button
+          onclick={handleRemoveEmptyPlaylists}
+          class="rounded bg-red px-4 py-2 text-sm font-medium text-white hover:opacity-80"
+        >
+          Delete {emptyCount} Empty
+        </button>
+      {/if}
+    </div>
   </div>
 
   {#if !$authStatus.authenticated}

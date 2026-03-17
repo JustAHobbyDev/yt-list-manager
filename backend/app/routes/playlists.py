@@ -203,6 +203,42 @@ async def remove_all_unavailable(creds: RequireCreds):
     return {"removed": len(rows) - len(errors), "errors": errors}
 
 
+@router.post("/remove-empty")
+async def remove_empty_playlists(creds: RequireCreds):
+    db = await get_db()
+    try:
+        cursor = await db.execute("""
+            SELECT p.id
+            FROM playlists p
+            WHERE NOT EXISTS (
+                SELECT 1 FROM playlist_videos pv WHERE pv.playlist_id = p.id
+            )
+        """)
+        rows = await cursor.fetchall()
+    finally:
+        await db.close()
+
+    if not rows:
+        return {"removed": 0, "errors": []}
+
+    errors = []
+    for row in rows:
+        playlist_id = row["id"]
+        try:
+            await yt_delete_playlist(creds, playlist_id)
+            db = await get_db()
+            try:
+                await db.execute("DELETE FROM folder_playlists WHERE playlist_id = ?", (playlist_id,))
+                await db.execute("DELETE FROM playlists WHERE id = ?", (playlist_id,))
+                await db.commit()
+            finally:
+                await db.close()
+        except Exception as e:
+            errors.append({"playlist_id": playlist_id, "error": str(e)})
+
+    return {"removed": len(rows) - len(errors), "errors": errors}
+
+
 @router.post("/move-videos")
 async def move_videos(body: MoveVideosRequest, creds: RequireCreds):
     db = await get_db()

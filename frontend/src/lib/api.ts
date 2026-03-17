@@ -57,6 +57,11 @@ export const removeAllUnavailable = () =>
     method: "POST",
   });
 
+export const removeEmptyPlaylists = () =>
+  request<{ removed: number; errors: any[] }>("/playlists/remove-empty", {
+    method: "POST",
+  });
+
 export const moveVideos = (
   sourcePlaylistId: string,
   targetPlaylistId: string,
