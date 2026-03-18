@@ -13,6 +13,7 @@
     draggingVideoPlaylistId,
     applyMoveToPlaylists,
     videoMoveEvent,
+    quotaInfo,
   } from "../lib/stores";
   import {
     loginUrl,
@@ -25,6 +26,7 @@
     updateFolder,
     deleteFolder as apiDeleteFolder,
     moveVideos,
+    getQuota,
   } from "../lib/api";
   import type { Folder } from "../lib/types";
 
@@ -45,6 +47,11 @@
     } catch {
       // not authed yet
     }
+    try {
+      quotaInfo.set(await getQuota());
+    } catch {
+      // not authed yet
+    }
   });
 
   async function handleSync() {
@@ -56,6 +63,7 @@
           if (progress.status === "done") {
             addToast(progress.message || "Sync complete", "success");
             getPlaylists().then((p) => playlists.set(p));
+            getQuota().then((q) => quotaInfo.set(q));
           } else if (progress.status === "error") {
             addToast(progress.message || "Sync failed", "error");
           }
@@ -272,6 +280,25 @@
             style="width: {$syncProgress.playlists_total > 0
               ? ($syncProgress.playlists_done / $syncProgress.playlists_total) * 100
               : 0}%"
+          ></div>
+        </div>
+      </div>
+    {/if}
+
+    {#if $quotaInfo}
+      {@const pct = Math.min(100, Math.round(($quotaInfo.estimated_used / $quotaInfo.daily_limit) * 100))}
+      <div class="border-b border-border px-3 py-2">
+        <div class="flex justify-between text-xs text-text-muted mb-1">
+          <span>API Quota</span>
+          <span>{$quotaInfo.estimated_used.toLocaleString()} / {$quotaInfo.daily_limit.toLocaleString()}</span>
+        </div>
+        <div class="h-1 w-full rounded bg-border">
+          <div
+            class="h-1 rounded transition-all"
+            class:bg-green={pct < 75}
+            class:bg-yellow={pct >= 75 && pct < 90}
+            class:bg-red={pct >= 90}
+            style="width: {pct}%"
           ></div>
         </div>
       </div>

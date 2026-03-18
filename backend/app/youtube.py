@@ -1,24 +1,48 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
 from app.models import QuotaInfo
+from app.database import get_db
 
-# In-memory quota tracker (resets on restart)
-_quota_used = 0
-
-
-def _track(units: int):
-    global _quota_used
-    _quota_used += units
+_PACIFIC = ZoneInfo("America/Los_Angeles")
 
 
-def get_quota() -> QuotaInfo:
-    return QuotaInfo(estimated_used=_quota_used)
+def _pacific_today() -> str:
+    return datetime.now(_PACIFIC).strftime("%Y-%m-%d")
 
 
-def reset_quota():
-    global _quota_used
-    _quota_used = 0
+async def _track(units: int):
+    today = _pacific_today()
+    db = await get_db()
+    try:
+        await db.execute(
+            """INSERT INTO quota (id, date, units_used) VALUES (1, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+                 units_used = CASE WHEN date = excluded.date
+                              THEN units_used + excluded.units_used
+                              ELSE excluded.units_used END,
+                 date = excluded.date""",
+            (today, units),
+        )
+        await db.commit()
+    finally:
+        await db.close()
+
+
+async def get_quota() -> QuotaInfo:
+    today = _pacific_today()
+    db = await get_db()
+    try:
+        cursor = await db.execute("SELECT date, units_used FROM quota WHERE id = 1")
+        row = await cursor.fetchone()
+    finally:
+        await db.close()
+    if row and row["date"] == today:
+        return QuotaInfo(estimated_used=row["units_used"])
+    return QuotaInfo(estimated_used=0)
 
 
 def get_service(creds: Credentials):
@@ -35,7 +59,7 @@ async def fetch_my_playlists(creds: Credentials) -> list[dict]:
     )
     while request:
         response = request.execute()
-        _track(1)
+        await _track(1)
         for item in response.get("items", []):
             playlists.append({
                 "id": item["id"],
@@ -59,7 +83,7 @@ async def fetch_playlist_items(creds: Credentials, playlist_id: str) -> list[dic
     )
     while request:
         response = request.execute()
-        _track(1)
+        await _track(1)
         for item in response.get("items", []):
             video_id = item["contentDetails"]["videoId"]
             snippet = item["snippet"]
@@ -86,7 +110,7 @@ async def check_video_statuses(creds: Credentials, video_ids: list[str]) -> dict
             part="status,contentDetails",
             id=",".join(batch),
         ).execute()
-        _track(1)
+        await _track(1)
 
         found_ids = set()
         for item in response.get("items", []):
@@ -117,7 +141,7 @@ async def check_video_statuses(creds: Credentials, video_ids: list[str]) -> dict
 async def delete_playlist_item(creds: Credentials, playlist_item_id: str):
     service = get_service(creds)
     service.playlistItems().delete(id=playlist_item_id).execute()
-    _track(50)
+    await _track(50)
 
 
 async def insert_playlist_item(creds: Credentials, playlist_id: str, video_id: str) -> str:
@@ -134,14 +158,14 @@ async def insert_playlist_item(creds: Credentials, playlist_id: str, video_id: s
             }
         },
     ).execute()
-    _track(50)
+    await _track(50)
     return response["id"]
 
 
 async def delete_playlist(creds: Credentials, playlist_id: str):
     service = get_service(creds)
     service.playlists().delete(id=playlist_id).execute()
-    _track(50)
+    await _track(50)
 
 
 async def rename_playlist(creds: Credentials, playlist_id: str, new_title: str):
@@ -153,4 +177,4 @@ async def rename_playlist(creds: Credentials, playlist_id: str, new_title: str):
             "snippet": {"title": new_title},
         },
     ).execute()
-    _track(50)
+    await _track(50)

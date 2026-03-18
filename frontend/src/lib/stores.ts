@@ -1,5 +1,5 @@
 import { writable, get } from "svelte/store";
-import type { AuthStatus, PlaylistSummary, SyncProgress, Folder } from "./types";
+import type { AuthStatus, PlaylistSummary, SyncProgress, Folder, QuotaInfo } from "./types";
 
 export const authStatus = writable<AuthStatus>({ authenticated: false, channel_title: null });
 export const playlists = writable<PlaylistSummary[]>([]);
@@ -12,6 +12,7 @@ export const syncProgress = writable<SyncProgress>({
   message: null,
 });
 export const toasts = writable<{ id: number; message: string; type: "success" | "error" | "info" }[]>([]);
+export const quotaInfo = writable<QuotaInfo | null>(null);
 
 let toastId = 0;
 export function addToast(message: string, type: "success" | "error" | "info" = "info") {

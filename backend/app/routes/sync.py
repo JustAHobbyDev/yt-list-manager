@@ -177,4 +177,4 @@ async def sync_status_sse():
 
 @router.get("/api/quota", response_model=QuotaInfo)
 async def quota():
-    return get_quota()
+    return await get_quota()
