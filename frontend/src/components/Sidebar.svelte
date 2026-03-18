@@ -11,6 +11,8 @@
     addToast,
     draggingVideoItemId,
     draggingVideoPlaylistId,
+    applyMoveToPlaylists,
+    videoMoveEvent,
   } from "../lib/stores";
   import {
     loginUrl,
@@ -180,6 +182,8 @@
     try {
       const result = await moveVideos(sourcePlId, targetPlId, [videoItemId]);
       addToast(`Moved ${result.moved} video`, "success");
+      applyMoveToPlaylists(sourcePlId, targetPlId, 1, 0, 0);
+      videoMoveEvent.set({ itemIds: [videoItemId], sourcePlaylistId: sourcePlId });
       getPlaylists().then((p) => playlists.set(p));
     } catch (e: any) {
       addToast(e.message, "error");

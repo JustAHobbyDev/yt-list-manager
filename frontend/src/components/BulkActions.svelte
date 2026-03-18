@@ -10,7 +10,7 @@
   }: {
     selectedIds: string[];
     playlistId: string;
-    onDone?: () => void;
+    onDone?: (movedIds?: string[]) => void;
   } = $props();
 
   let moveTarget = $state("");
@@ -35,10 +35,11 @@
   async function handleMove() {
     if (!moveTarget) return;
     try {
-      const result = await moveVideos(playlistId, moveTarget, selectedIds);
+      const ids = [...selectedIds];
+      const result = await moveVideos(playlistId, moveTarget, ids);
       addToast(`Moved ${result.moved} video(s)`, "success");
       showMovePanel = false;
-      onDone?.();
+      onDone?.(ids);
     } catch (e: any) {
       addToast(e.message, "error");
     }

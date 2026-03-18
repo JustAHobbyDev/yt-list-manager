@@ -93,3 +93,35 @@ export function initRouter() {
 // ── Global drag state (videos dragged from detail onto sidebar playlists) ──
 export const draggingVideoItemId = writable<string | null>(null);
 export const draggingVideoPlaylistId = writable<string | null>(null);
+
+// ── Optimistic playlist count updates ───────────────────────────────────────
+export function applyMoveToPlaylists(
+  sourceId: string,
+  targetId: string,
+  count: number,
+  available: number,
+  unavailable: number
+) {
+  playlists.update((ps) =>
+    ps.map((p) => {
+      if (p.id === sourceId)
+        return {
+          ...p,
+          item_count: Math.max(0, p.item_count - count),
+          available_count: Math.max(0, p.available_count - available),
+          unavailable_count: Math.max(0, p.unavailable_count - unavailable),
+        };
+      if (p.id === targetId)
+        return {
+          ...p,
+          item_count: p.item_count + count,
+          available_count: p.available_count + available,
+          unavailable_count: p.unavailable_count + unavailable,
+        };
+      return p;
+    })
+  );
+}
+
+// Notifies PlaylistDetail about videos moved via sidebar drag-drop
+export const videoMoveEvent = writable<{ itemIds: string[]; sourcePlaylistId: string } | null>(null);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { addToast, navigateTo, showConfirm } from "../lib/stores";
+  import { addToast, navigateTo, showConfirm, playlists, syncProgress, applyMoveToPlaylists, videoMoveEvent } from "../lib/stores";
   import {
     getPlaylist,
     removeUnavailable,
@@ -11,7 +11,6 @@
     subscribeSyncProgress,
     getPlaylists,
   } from "../lib/api";
-  import { playlists, syncProgress } from "../lib/stores";
   import type { PlaylistDetail as PlaylistDetailType } from "../lib/types";
   import VideoRow from "../components/VideoRow.svelte";
   import VideoCard from "../components/VideoCard.svelte";
@@ -70,10 +69,15 @@
 
   async function handleMoveVideo(playlistItemId: string, targetPlaylistId: string) {
     try {
+      const video = detail?.videos.find((v) => v.playlist_item_id === playlistItemId);
       const result = await moveVideos(playlistId, targetPlaylistId, [playlistItemId]);
       addToast(`Moved ${result.moved} video`, "success");
-      await load();
-      refreshPlaylists();
+      if (detail) {
+        detail.videos = detail.videos.filter((v) => v.playlist_item_id !== playlistItemId);
+      }
+      const isAvailable = video?.status === "available" ? 1 : 0;
+      applyMoveToPlaylists(playlistId, targetPlaylistId, 1, isAvailable, 1 - isAvailable);
+      getPlaylists().then((p) => playlists.set(p));
     } catch (e: any) {
       addToast(e.message, "error");
     }
@@ -159,6 +163,15 @@
     playlistId;
     load();
     selected = new Set();
+  });
+
+  $effect(() => {
+    const ev = $videoMoveEvent;
+    if (ev && ev.sourcePlaylistId === playlistId && detail) {
+      const ids = new Set(ev.itemIds);
+      detail.videos = detail.videos.filter((v) => !ids.has(v.playlist_item_id!));
+      videoMoveEvent.set(null);
+    }
   });
 
   const unavailableCount = $derived(
@@ -257,10 +270,19 @@
     <BulkActions
       selectedIds={[...selected]}
       {playlistId}
-      onDone={() => {
-        selected = new Set();
-        load();
-        refreshPlaylists();
+      onDone={(movedIds) => {
+        if (movedIds && detail) {
+          const ids = new Set(movedIds);
+          const moved = detail.videos.filter((v) => ids.has(v.playlist_item_id!));
+          detail.videos = detail.videos.filter((v) => !ids.has(v.playlist_item_id!));
+          // BulkActions doesn't expose the target playlist id, so only refresh counts via server
+          getPlaylists().then((p) => playlists.set(p));
+          selected = new Set();
+        } else {
+          selected = new Set();
+          load();
+          refreshPlaylists();
+        }
       }}
     />
 
