@@ -24,6 +24,13 @@ from app.youtube import (
 
 router = APIRouter(prefix="/api/playlists", tags=["playlists"])
 
+# YouTube auto-generates these playlists and prevents deletion via the API.
+_SYSTEM_PREFIXES = ("LL", "FL", "WL", "UU", "HL")
+
+
+def _is_system_playlist(playlist_id: str) -> bool:
+    return any(playlist_id.startswith(p) for p in _SYSTEM_PREFIXES)
+
 
 @router.get("", response_model=list[PlaylistSummary])
 async def list_playlists(creds: RequireCreds):
@@ -118,6 +125,8 @@ async def rename_playlist_endpoint(playlist_id: str, body: RenamePlaylistRequest
 
 @router.delete("/{playlist_id}")
 async def delete_playlist_endpoint(playlist_id: str, creds: RequireCreds):
+    if _is_system_playlist(playlist_id):
+        raise HTTPException(status_code=400, detail="System playlists cannot be deleted")
     await yt_delete_playlist(creds, playlist_id)
     db = await get_db()
     try:
@@ -220,6 +229,7 @@ async def remove_empty_playlists(creds: RequireCreds):
     finally:
         await db.close()
 
+    rows = [r for r in rows if not _is_system_playlist(r["id"])]
     if not rows:
         return {"removed": 0, "errors": []}
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { addToast, navigateTo, showConfirm, playlists, syncProgress, applyMoveToPlaylists, videoMoveEvent } from "../lib/stores";
+  import { addToast, navigateTo, showConfirm, playlists, syncProgress, applyMoveToPlaylists, videoMoveEvent, isSystemPlaylist } from "../lib/stores";
   import {
     getPlaylist,
     removeUnavailable,
@@ -257,13 +257,15 @@
             Remove {unavailableCount} Unavailable
           </button>
         {/if}
-        <button
-          onclick={handleDeletePlaylist}
-          class="rounded border border-red/50 px-3 py-1.5 text-xs text-red hover:bg-red/10"
-          title="Delete playlist"
-        >
-          Delete Playlist
-        </button>
+        {#if !isSystemPlaylist(playlistId)}
+          <button
+            onclick={handleDeletePlaylist}
+            class="rounded border border-red/50 px-3 py-1.5 text-xs text-red hover:bg-red/10"
+            title="Delete playlist"
+          >
+            Delete Playlist
+          </button>
+        {/if}
       </div>
     </div>
 

@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { playlists, authStatus, addToast, showConfirm } from "../lib/stores";
+  import { playlists, authStatus, addToast, showConfirm, isSystemPlaylist } from "../lib/stores";
   import { removeAllUnavailable, removeEmptyPlaylists, getPlaylists } from "../lib/api";
   import PlaylistCard from "../components/PlaylistCard.svelte";
 
   const totalVideos = $derived($playlists.reduce((s, p) => s + p.item_count, 0));
   const totalUnavailable = $derived($playlists.reduce((s, p) => s + p.unavailable_count, 0));
-  const emptyCount = $derived($playlists.filter((p) => p.item_count === 0).length);
+  const emptyCount = $derived(
+    $playlists.filter((p) => p.item_count === 0 && !isSystemPlaylist(p.id)).length
+  );
 
   async function handleRemoveAllUnavailable() {
     const ok = await showConfirm({

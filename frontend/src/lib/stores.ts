@@ -125,3 +125,10 @@ export function applyMoveToPlaylists(
 
 // Notifies PlaylistDetail about videos moved via sidebar drag-drop
 export const videoMoveEvent = writable<{ itemIds: string[]; sourcePlaylistId: string } | null>(null);
+
+// ── System playlist detection ────────────────────────────────────────────────
+// YouTube auto-generates these playlists and prevents their deletion via API.
+const SYSTEM_PLAYLIST_PREFIXES = ["LL", "FL", "WL", "UU", "HL"];
+export function isSystemPlaylist(id: string): boolean {
+  return SYSTEM_PLAYLIST_PREFIXES.some((prefix) => id.startsWith(prefix));
+}
