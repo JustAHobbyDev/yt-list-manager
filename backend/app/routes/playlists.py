@@ -30,7 +30,9 @@ async def list_playlists(creds: RequireCreds):
     db = await get_db()
     try:
         cursor = await db.execute("""
-            SELECT p.*,
+            SELECT p.id, p.title, p.description, p.thumbnail_url,
+                   p.published_at, p.last_synced_at,
+                   COUNT(pv.playlist_item_id) AS item_count,
                    COUNT(CASE WHEN v.status = 'available' THEN 1 END) AS available_count,
                    COUNT(CASE WHEN v.status != 'available' THEN 1 END) AS unavailable_count
             FROM playlists p
@@ -260,7 +262,16 @@ async def move_videos(body: MoveVideosRequest, creds: RequireCreds):
             errors.append({"playlist_item_id": item_id, "error": "Not found in DB"})
             continue
         try:
-            await insert_playlist_item(creds, body.target_playlist_id, video_id)
+            new_item_id = await insert_playlist_item(creds, body.target_playlist_id, video_id)
+            db = await get_db()
+            try:
+                await db.execute(
+                    "INSERT OR IGNORE INTO playlist_videos (playlist_item_id, playlist_id, video_id, position, added_at) VALUES (?, ?, ?, 0, datetime('now'))",
+                    (new_item_id, body.target_playlist_id, video_id),
+                )
+                await db.commit()
+            finally:
+                await db.close()
             if body.delete_from_source:
                 await delete_playlist_item(creds, item_id)
                 db = await get_db()

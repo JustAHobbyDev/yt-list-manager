@@ -120,9 +120,9 @@ async def delete_playlist_item(creds: Credentials, playlist_item_id: str):
     _track(50)
 
 
-async def insert_playlist_item(creds: Credentials, playlist_id: str, video_id: str):
+async def insert_playlist_item(creds: Credentials, playlist_id: str, video_id: str) -> str:
     service = get_service(creds)
-    service.playlistItems().insert(
+    response = service.playlistItems().insert(
         part="snippet",
         body={
             "snippet": {
@@ -135,6 +135,7 @@ async def insert_playlist_item(creds: Credentials, playlist_id: str, video_id: s
         },
     ).execute()
     _track(50)
+    return response["id"]
 
 
 async def delete_playlist(creds: Credentials, playlist_id: str):
