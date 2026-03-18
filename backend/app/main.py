@@ -2,8 +2,10 @@ import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from googleapiclient.errors import HttpError
 
 load_dotenv()
 
@@ -30,6 +32,21 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(playlists.router)
 app.include_router(sync.router)
+
+
+@app.exception_handler(HttpError)
+async def youtube_http_error_handler(request: Request, exc: HttpError):
+    details = exc.error_details if isinstance(exc.error_details, list) else []
+    reason = details[0].get("reason", "") if details else ""
+    if int(exc.status_code) == 403 and reason == "quotaExceeded":
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "YouTube API quota exceeded. Resets daily at midnight Pacific Time."},
+        )
+    return JSONResponse(
+        status_code=int(exc.status_code),
+        content={"detail": exc._get_reason() or str(exc)},
+    )
 
 
 @app.get("/api/health")
